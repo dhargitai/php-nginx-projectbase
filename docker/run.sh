@@ -10,6 +10,8 @@ if [ "$APP_ENV" = "dev" ] ; then
     COMPOSER_INSTALL_MODE="--dev"
 fi
 
+sed -i "s|;clear_env = no|clear_env = no|" /etc/php5/fpm/pool.d/www.conf
+
 bin/wait-for-db.sh && \
 composer install --prefer-dist $COMPOSER_INSTALL_MODE
 
