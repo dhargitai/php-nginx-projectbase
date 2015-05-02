@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM phusion/baseimage:0.9.16
 
 # Install packages
 RUN apt-get update -qq && \
@@ -6,11 +6,6 @@ RUN apt-get update -qq && \
         g++ \
         build-essential \
         nginx \
-        supervisor \
-        curl \
-        wget \
-        vim \
-        git \
         php5-fpm \
         php5-mysql \
         php5-mcrypt \
@@ -20,10 +15,14 @@ RUN apt-get update -qq && \
         php5-xdebug \
         php5-xsl \
         php5-apcu \
+        curl \
+        wget \
+        vim \
+        git \
         libicu-dev \
         libmcrypt-dev \
         libfreetype6-dev \
-        libjpeg62-turbo-dev \
+        libjpeg-progs \
         libmcrypt-dev \
         libpng12-dev \
         libjpeg-dev \
@@ -32,52 +31,33 @@ RUN apt-get update -qq && \
         libssl-dev \
         libxslt-dev && \
     apt-get clean && \
-    rm -r /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
-# Install rbenv
-RUN git clone https://github.com/sstephenson/rbenv.git /usr/local/rbenv
-RUN echo 'export RBENV_ROOT=/usr/local/rbenv' >> ~/.bash_profile
-RUN echo 'export PATH="$RBENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-RUN echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
-
-# Install ruby-build
-RUN mkdir /usr/local/rbenv/plugins
-RUN git clone https://github.com/sstephenson/ruby-build.git /usr/local/rbenv/plugins/ruby-build
-RUN /usr/local/rbenv/plugins/ruby-build/install.sh
-
-ENV PATH /usr/local/rbenv/shims:/usr/local/rbenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Set to Ruby 2.2.0
-RUN rbenv install 2.2.0
-RUN rbenv rehash
-RUN rbenv global 2.2.0
-
-# Install Compass
-RUN eval "$(rbenv init -)" && gem install compass
-
-# Install Bower
+# Install nodejs
 RUN curl -sL https://deb.nodesource.com/setup | bash -
 RUN apt-get install -y nodejs
-RUN npm install -g bower
+RUN npm install -g npm
 
-# Install Composer
+# Install composer
 ENV PATH /root/.composer/vendor/bin:$PATH
 RUN curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer global require "fxp/composer-asset-plugin:1.0.0" && \
     composer global dumpautoload --optimize
 
-# Create required directories
-RUN mkdir -p /var/log/supervisor
+# Add nginx
 RUN mkdir -p /etc/nginx
-RUN mkdir -p /var/run/php5-fpm
+RUN mkdir -p /etc/service/nginx
+ADD docker/services/nginx/nginx.sh /etc/service/nginx/run
+ADD docker/services/nginx/sites /etc/nginx/sites-enabled
 
-# Add configuration files
-ADD docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-ADD docker/php.ini /etc/php5/fpm/conf.d/40-custom.ini
-ADD docker/sites /etc/nginx/sites-enabled
+# Add php fpm
+RUN mkdir -p /var/run/php5-fpm
+RUN mkdir -p /etc/service/php5-fpm
+ADD docker/services/php5-fpm/php5-fpm.sh /etc/service/php5-fpm/run
+ADD docker/services/php5-fpm/php.ini /etc/php5/fpm/conf.d/40-custom.ini
 
 ADD application /var/www
 ADD docker/run.sh /root/run.sh
