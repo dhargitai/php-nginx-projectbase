@@ -1,3 +1,4 @@
+#!/bin/bash
 docker build -t diatigrah_web .
 
 docker create --name diatigrah_mysql_data arungupta/mysql-data-container

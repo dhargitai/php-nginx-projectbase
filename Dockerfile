@@ -15,6 +15,7 @@ RUN apt-get update -qq && \
         php5-xdebug \
         php5-xsl \
         php5-apcu \
+        php5-intl \
         curl \
         wget \
         vim \
