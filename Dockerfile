@@ -1,11 +1,18 @@
 FROM phusion/baseimage:0.9.16
 
+RUN echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" > /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get -y dist-upgrade
+
+RUN echo "deb http://ppa.launchpad.net/ondrej/php5-5.6/ubuntu trusty main" >> /etc/apt/sources.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-key E5267A6C && \
+    apt-get update && \
+    apt-get clean
+
 # Install packages
-RUN apt-get update -qq && \
-    apt-get install -y --fix-missing \
-        g++ \
-        build-essential \
+RUN apt-get install -y --fix-missing \
         nginx \
+        php5 \
         php5-fpm \
         php5-mysql \
         php5-mcrypt \
@@ -16,20 +23,15 @@ RUN apt-get update -qq && \
         php5-xsl \
         php5-apcu \
         php5-intl \
+        php5-ldap \
+        php5-sqlite \
+        php5-pgsql \
+        php-pear \
+        php5-xmlrpc \
         curl \
         wget \
         vim \
         git \
-        libicu-dev \
-        libmcrypt-dev \
-        libfreetype6-dev \
-        libjpeg-progs \
-        libmcrypt-dev \
-        libpng12-dev \
-        libjpeg-dev \
-        zlib1g-dev \
-        libffi-dev \
-        libssl-dev \
         libxslt-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
