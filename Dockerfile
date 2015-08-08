@@ -1,9 +1,5 @@
 FROM phusion/baseimage:0.9.17
 
-RUN echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" > /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get -y dist-upgrade
-
 RUN echo "deb http://ppa.launchpad.net/ondrej/php5-5.6/ubuntu trusty main" >> /etc/apt/sources.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-key E5267A6C && \
     apt-get update && \
