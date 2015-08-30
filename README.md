@@ -9,17 +9,9 @@ git clone git@github.com:dhargitai/php-nginx-projectbase.git myproject
 cd myproject
 ```
 
-## Edit the Dockerfile to build a new image on the top of this base image, for example:
+## Set it up
 ```console
-FROM diatigrah/php-nginx-projectbase
-
-ADD docker/services/nginx/sites /etc/nginx/sites-enabled
-ADD docker/services/php5-fpm/php.ini /etc/php5/fpm/conf.d/40-custom.ini
-
-ADD application /var/www
-ADD docker/run.sh /root/run.sh
-
-composer config -g github-oauth.github.com YOUR-OAUTH-TOKEN
+./setup.sh
 ```
 
 ## Build it

@@ -4,7 +4,7 @@ server {
 
     listen 80;
 
-    server_name ${NGINX_SERVER_NAMES};
+    server_name diatigrah.dev www.diatigrah.dev;
     root        /var/www/public;
     index       index.php;
 

@@ -1,12 +1,13 @@
 FROM phusion/baseimage:0.9.17
 
-RUN echo "deb http://ppa.launchpad.net/ondrej/php5-5.6/ubuntu trusty main" >> /etc/apt/sources.list && \
+RUN add-apt-repository ppa:ondrej/php5-5.6 && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-key E5267A6C && \
     apt-get update && \
-    apt-get clean
+    apt-get install --assume-yes python-software-properties && \
+    apt-get update
 
 # Install packages
-RUN apt-get install -y --fix-missing \
+RUN apt-get install --assume-yes --fix-missing \
         nginx \
         php5 \
         php5-fpm \
@@ -46,6 +47,8 @@ RUN curl -sS https://getcomposer.org/installer | php && \
     composer global require "fxp/composer-asset-plugin:1.0.0" && \
     composer global dumpautoload --optimize
 
+ADD docker/services/.vimrc /root/.vimrc
+
 # Add nginx
 RUN mkdir -p /etc/nginx
 RUN mkdir -p /etc/service/nginx
@@ -60,6 +63,9 @@ ADD docker/services/php5-fpm/php.ini /etc/php5/fpm/conf.d/40-custom.ini
 
 ADD application /var/www
 ADD docker/run.sh /root/run.sh
+
+ADD application/bin/wait-for-db.sh /wait-for-db.sh
+RUN chmod a+x /wait-for-db.sh
 
 WORKDIR /var/www
 

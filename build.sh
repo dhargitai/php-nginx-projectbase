@@ -1,21 +1,27 @@
 #!/bin/bash
+
+if [ $(docker ps -a | grep diatigrah_mysql | wc -l) -eq 1 ]; then
+  docker rm -f diatigrah_mysql
+fi
+if [ $(docker ps -a | grep diatigrah_web_1 | wc -l) -eq 1 ]; then
+  docker rm -f diatigrah_web_1
+fi
+if [ $(docker images | grep diatigrah_web | wc -l) -eq 1 ]; then
+  docker rmi -f diatigrah_web
+fi
+if [ $(docker ps -a | grep diatigrah_dataonly_mysql | wc -l) -eq 0 ]; then
+  docker create --name diatigrah_dataonly_mysql arungupta/mysql-data-container
+fi
+
 docker build -t diatigrah_web .
 
-docker create --name diatigrah_mysql_data arungupta/mysql-data-container
+./start.sh
 
-docker run  --name diatigrah_mysql \
-            --volumes-from diatigrah_mysql_data \
-            -v /var/lib/mysql:/var/lib/mysql \
-            -e MYSQL_USER=dev \
-            -e MYSQL_PASSWORD=dev123 \
-            -e MYSQL_DATABASE=mydatabase \
-            -e MYSQL_ROOT_PASSWORD=supersecret \
-            -P -d \
-          mysql
+./wait-for-webserver.sh
 
-docker run  --name diatigrah_web_1 \
-            --link diatigrah_mysql:db \
-            -v $(pwd)/application:/var/www \
-            -e APP_ENV=dev \
-            -p 80:80 -d \
-          diatigrah_web
+docker exec -it diatigrah_web_1 su www-data -s /bin/bash -c '
+    composer install --ansi --prefer-dist --no-interaction
+'
+
+echo ""
+echo "Ok, done! Let's work!"
