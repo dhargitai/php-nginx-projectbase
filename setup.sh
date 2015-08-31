@@ -50,4 +50,4 @@ git init
 echo "192.168.99.100 $projectname.dev $projectname.test" | sudo tee -a /etc/hosts
 
 echo
-echo -n "Ok, your files are ready. You can safely delete this file and build your environment by running build.sh"
+echo "Ok, your files are ready. You can safely delete this file and build your environment by running build.sh"
