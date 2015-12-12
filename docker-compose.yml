@@ -1,0 +1,27 @@
+database:
+  container_name: diatigrah_mysql
+  image: mysql
+  volumes:
+    - /var/lib/mysql:/var/lib/mysql
+  env_file:
+    - .env
+  extra_hosts:
+    - "db1.diatigrah.dev:127.0.0.1"
+  ports:
+    - "3306:3306"
+
+web:
+  container_name: diatigrah_web_1
+  build: .
+  links:
+    - database:db
+  volumes:
+    - ./application:/var/www/diatigrah
+  env_file:
+    - .env
+  extra_hosts:
+    - "web1.diatigrah.dev:127.0.0.1"
+    - "diatigrah.dev:127.0.0.1"
+    - "diatigrah.test:127.0.0.1"
+  ports:
+    - "80:80"

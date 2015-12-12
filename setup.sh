@@ -1,35 +1,30 @@
 #!/bin/bash
 
 echo
-read -p "Enter your project's name (all lowercase without any special character or space) and press [ENTER]: " projectname
-read -p "Enter your Github API token if you'll use Composer and press [ENTER]: " githubtoken
-read -p "Enter MySQL username and press [ENTER] (default: dev): " mysqluser
-read -p "Enter MySQL password and press [ENTER] (default: dev123): " -s mysqlpass
-echo
-read -p "Enter MySQL root password and press [ENTER] (default: supersecret): " -s mysqlrootpass
-echo
-
-sed -i.bak "s%diatigrah%$projectname%g" build.sh
-sed -i.bak "s%diatigrah%$projectname%g" start.sh
-sed -i.bak "s%diatigrah%$projectname%g" stop.sh
-sed -i.bak "s%diatigrah%$projectname%g" wait-for-webserver.sh
-sed -i.bak "s%diatigrah%$projectname%g" erase-everything.sh
-sed -i.bak "s%diatigrah%$projectname%g" docker/services/nginx/sites/default
-sed -i.bak "s%/var/www/public%/var/www/$projectname/public%g" docker/services/nginx/sites/default
-
-if [ "$mysqluser" != "" ]; then
-  sed -i.bak "s%MYSQL_USER=dev%MYSQL_USER=$mysqluser%g" start.sh
+echo "Determining Docker IP..."
+dockerip=$(ifconfig docker0 2> /dev/null | grep --word-regexp inet | awk '{print $2}' | sed 's%addr:%%g')
+dockerinterfaceip=$dockerip
+if [[ ! $dockerip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
+    dockerip=$(docker-machine ip default 2> /dev/null)
+    if [[ ! $dockerip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
+        echo "Can't determine Docker's IP address"
+        exit -1
+    fi
+    subnet=${dockerip%.*}
+    dockerinterfaceip=$(ifconfig 2> /dev/null | grep -F "inet $subnet" | awk '{print $2}' | sed 's%addr:%%g')
 fi
 
-if [ "$mysqlpass" != "" ]; then
-  sed -i.bak "s%MYSQL_PASSWORD=dev123%MYSQL_PASSWORD=$mysqlpass%g" start.sh
-fi
+encryptionkey=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
-if [ "$mysqlrootpass" != "" ]; then
-  sed -i.bak "s%MYSQL_ROOT_PASSWORD=supersecret%MYSQL_ROOT_PASSWORD=$mysqlrootpass%g" start.sh
-fi
+echo "APP_ENV=dev
+MYSQL_USER=dev
+MYSQL_PASSWORD=dev123
+MYSQL_DATABASE=diatigrah_db
+ENCRYPTION_KEY=$encryptionkey
+DOCKER_IP=$dockerip
+" > .env
 
-echo "FROM diatigrah/php-nginx-projectbase:0.2.4
+echo "FROM diatigrah/php-nginx-projectbase:0.2.5
 
 ADD docker/services/nginx/sites /etc/nginx/sites-enabled
 ADD docker/services/php5-fpm/php.ini /etc/php5/fpm/conf.d/40-custom.ini
@@ -40,14 +35,32 @@ ADD docker/run.sh /root/run.sh
 WORKDIR /var/www/$projectname
 " > Dockerfile
 
-if [ "$githubtoken" != "" ]; then
-echo "RUN composer config -g github-oauth.github.com $githubtoken" >> Dockerfile
-fi
+echo "; XDebug configuration
+xdebug.remote_enable = 1
+xdebug.renite_enable = 1
+xdebug.max_nesting_level = 1000
+xdebug.profiler_enable_trigger = 1
+xdebug.profiler_output_dir = \"/var/log\"
+xdebug.default_enable = 1
+xdebug.remote_autostart = 0
+xdebug.remote_handler = dbgp
+xdebug.remote_port = 9000
+xdebug.remote_connect_back = Off
+xdebug.remote_host = $dockerip
 
-rm -rf .git *.bak docker/services/nginx/sites/*.bak
-git init
-
-echo "192.168.99.100 $projectname.dev $projectname.test" | sudo tee -a /etc/hosts
+cgi.fix_pathinfo = 0
+date.timezone = \"Europe/Budapest\"
+" > docker/services/php5-fpm/php.ini
 
 echo
-echo "Ok, your files are ready. You can safely delete this file and build your environment by running build.sh"
+host_entry="$dockerip diatigrah.dev diatigrah.test"
+if grep "$host_entry" /etc/hosts;
+then
+    echo "Your hosts file is up to date."
+else
+    echo "Adding diatigrah.dev and diatigrah.test domains to your hosts file..."
+    echo $host_entry | sudo tee -a /etc/hosts
+fi
+
+echo
+echo "Ok, your files are ready. From now you can use build.sh to build up your environment."

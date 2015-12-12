@@ -1,27 +1,22 @@
 #!/bin/bash
 
-if [ $(docker ps -a | grep diatigrah_mysql | wc -l) -eq 1 ]; then
-  docker rm -f diatigrah_mysql
-fi
-if [ $(docker ps -a | grep diatigrah_web_1 | wc -l) -eq 1 ]; then
-  docker rm -f diatigrah_web_1
-fi
-if [ $(docker images | grep diatigrah_web | wc -l) -eq 1 ]; then
-  docker rmi -f diatigrah_web
-fi
-if [ $(docker ps -a | grep diatigrah_dataonly_mysql | wc -l) -eq 0 ]; then
-  docker create --name diatigrah_dataonly_mysql arungupta/mysql-data-container
-fi
+export $(cat .env | grep -v ^# | xargs)
 
-docker build -t diatigrah_web .
-
-./start.sh
+docker-compose up -d --force-recreate
 
 ./wait-for-webserver.sh
 
-docker exec -it diatigrah_web_1 su www-data -s /bin/bash -c '
-    composer install --ansi --prefer-dist --no-interaction
-'
+echo; echo "Setting up permissions to the database..."
+docker exec -it diatigrah_mysql /bin/bash -c "
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF
+GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* To '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';
+GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* To '$MYSQL_USER'@'localhost' IDENTIFIED BY '$MYSQL_PASSWORD';
+DROP DATABASE IF EXISTS $MYSQL_DATABASE;
+EOF
+"
 
-echo ""
+echo; echo "Building project dependecies..."
+docker exec -i diatigrah_web_1 /bin/bash < configure-web-node.sh
+
+echo
 echo "Ok, done! Let's work!"
