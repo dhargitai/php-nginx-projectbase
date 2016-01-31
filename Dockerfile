@@ -73,7 +73,7 @@ RUN echo "Package: nginx \
 Pin: version 1.8.0-pagespeed \
 Pin-Priority: 1001" > /etc/apt/preferences.d/nginx
 
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+ADD docker/services/nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Install nodejs
 RUN curl -sL https://deb.nodesource.com/setup | bash -
