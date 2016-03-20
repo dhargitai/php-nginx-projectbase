@@ -1,4 +1,4 @@
-FROM diatigrah/nginx:latest
+FROM diatigrah/nginx:1.9.12
 
 RUN add-apt-repository ppa:ondrej/php5-5.6 && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-key E5267A6C && \
